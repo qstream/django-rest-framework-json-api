@@ -1,5 +1,5 @@
 import json
-
+import functools
 import inflection
 from django.core.exceptions import ImproperlyConfigured
 from django.urls import NoReverseMatch
@@ -168,6 +168,14 @@ class HyperlinkedRelatedField(HyperlinkedMixin, SkipDataMixin, RelatedField):
         return ManyRelatedFieldWithNoData(**list_kwargs)
 
 
+@functools.cache
+def related_field_name(field_name):
+    return [
+        inflection.singularize(field_name),
+        inflection.pluralize(field_name),
+    ]
+
+
 class ResourceRelatedField(HyperlinkedMixin, PrimaryKeyRelatedField):
     _skip_polymorphic_optimization = True
     self_link_view_name = None
@@ -272,10 +280,7 @@ class ResourceRelatedField(HyperlinkedMixin, PrimaryKeyRelatedField):
 
         if parent is not None:
             # accept both singular and plural versions of field_name
-            field_names = [
-                inflection.singularize(field_name),
-                inflection.pluralize(field_name),
-            ]
+            field_names = related_field_name(field_name)
             includes = getattr(parent, "included_serializers", dict())
             for field in field_names:
                 if field in includes.keys():
