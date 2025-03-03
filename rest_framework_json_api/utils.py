@@ -79,12 +79,19 @@ def get_resource_name(context, expand_polymorphic_types=False):
 
 def get_serializer_fields(serializer):
     fields = None
-    if hasattr(serializer, "child"):
-        fields = serializer.child.fields
-        meta = getattr(serializer.child, "Meta", None)
-    if hasattr(serializer, "fields"):
+    meta = None
+
+    # Attempting to retrieve the fields and handling an AttributeError if there is no `fields` property is cheaper than
+    # retrieving the fields using `hasattr`, throwing them away and retrieving them again
+    try:
         fields = serializer.fields
         meta = getattr(serializer, "Meta", None)
+    except AttributeError:
+        try:
+            fields = serializer.child.fields
+            meta = getattr(serializer.child, "Meta", None)
+        except AttributeError:
+            pass
 
     if fields is not None:
         meta_fields = getattr(meta, "meta_fields", {})
